@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Campus Space Intelligence (Demo)</title><link rel="stylesheet" href="assets/css/style.css"></head>
+<body>
+<header><h1>AI-Based Campus Space Intelligence System</h1>
+<p class="muted">Decision-support research prototype for Cavite State University–Imus Campus. Recommendations need human review.</p>
+<p class="demo"><b>DEMO MODE</b> — All occupancy, schedule, and environmental data are simulated. This prototype is not connected to live campus systems or physical sensors.</p>
+<nav><button data-p="dash">Dashboard</button><button data-p="pred">Occupancy Prediction</button><button data-p="sched">Room Scheduling</button><button data-p="env">Environmental Monitoring</button><button data-p="rooms">Room Information</button></nav></header>
+<main>
+<section id="p-dash" class="page"><h2>Dashboard</h2><div id="cards"></div>
+<div class="grid2"><div class="box"><h3>Occupancy: actual vs. predicted (held-out test week)</h3><canvas id="c-occ" height="170"></canvas></div><div class="box"><h3>Recent alerts</h3><div id="alerts"></div></div></div>
+<div class="box"><h3>Room utilization</h3><p class="muted">Utilization (%) = current occupancy / room capacity x 100</p><div id="util" class="scroll"></div></div>
+<div class="box"><h3>Environmental overview (latest simulated readings)</h3><div id="envov" class="scroll"></div></div>
+<div class="box"><h3>Quick navigation</h3><button data-p="pred">Predict occupancy</button> <button data-p="sched">Schedule a room</button> <button data-p="env">View environment</button> <button data-p="rooms">Browse rooms</button></div></section>
+
+<section id="p-pred" class="page" hidden><h2>Occupancy Prediction</h2>
+<div class="box"><div class="form"><label>Room<select id="pr-room"></select></label><label>Day of week<select id="pr-day"></select></label><label>Time slot<select id="pr-hour"></select></label><label>Class scheduled?<input id="pr-sched" type="checkbox"></label><label>Expected class size<input id="pr-size" type="number" min="0" value="0"></label><label>k (neighbors)<input id="pr-k" type="number" min="1" max="25" value="5"></label><button id="pred-go" class="pri">Predict</button></div><div id="pred-out"></div></div>
+<div class="box"><h3>How it works</h3><p>The model is <b>k-nearest neighbors regression</b>. It compares your inputs (room type, capacity, day, hour, class scheduled, class size as a share of capacity) with past simulated records, finds the <i>k</i> most similar ones, and averages their occupancy rate. Number features are scaled to 0–1 so none dominates; a different room type adds a distance penalty. The result is kept between 0 and the room capacity. It learned only from simulated data, not real campus data.</p></div>
+<div class="box"><h3>Demonstration evaluation results</h3><div id="eval"></div><p class="muted">MAE = average size of the error in occupants. RMSE is similar but punishes big misses more. The baseline always guesses the average training occupancy; the model is useful only if its errors are lower. Scores on simulated data do not prove real-world accuracy.</p></div></section>
+
+<section id="p-sched" class="page" hidden><h2>Room Scheduling</h2>
+<div class="box"><div class="form"><label>Activity name<input id="s-name" maxlength="60"></label><label>Day<select id="s-day"></select></label><label>Start<input id="s-start" type="time" value="08:00"></label><label>End<input id="s-end" type="time" value="10:00"></label><label>Attendees<input id="s-att" type="number" min="1" value="30"></label><label>Room type<select id="s-type"></select></label><label>Equipment (Ctrl/Cmd-click)<select id="s-equip" multiple size="3"></select></label><label>Preferred room (optional)<select id="s-room"></select></label><button id="s-check" class="pri">Check and recommend rooms</button></div><div id="s-res"></div></div>
+<p class="muted">Mandatory rules: capacity, room type, equipment, no overlap on the same day (back-to-back is allowed). Preferences: less unused capacity scores higher; the preferred room gets +5. Suggestions are not official schedules.</p>
+<div class="box"><h3>Demo schedules</h3><div id="s-table" class="scroll"></div></div></section>
+
+<section id="p-env" class="page" hidden><h2>Environmental Monitoring</h2>
+<div class="box"><div class="form"><label>Room<select id="e-room"></select></label><label>Parameter<select id="e-param"><option value="temp">Temperature (°C)</option><option value="hum">Relative humidity (%)</option><option value="co2">CO₂ (ppm)</option></select></label></div></div><div id="e-cards"></div>
+<div class="grid2"><div class="box"><h3>Trend</h3><canvas id="c-env" height="170"></canvas></div><div class="box"><h3>Alerts (latest reading, all rooms)</h3><div id="e-alerts"></div></div></div>
+<div class="box"><h3>Reading history</h3><div id="e-hist" class="scroll"></div></div>
+<p class="muted">Thresholds are demonstration values, not official campus, legal or medical limits. Change them in <code>ENV.limits</code> in <code>assets/js/environment.js</code>. No sensors are connected; a real data source would replace <code>ENV.series()</code>.</p></section>
+
+<section id="p-rooms" class="page" hidden><h2>Room Information</h2>
+<div class="box"><div class="form"><label>Search room ID<input id="f-q"></label><label>Type<select id="f-type"></select></label><label>Building<select id="f-bld"></select></label></div></div>
+<div class="grid2"><div class="box"><div id="r-table" class="scroll"></div></div><div class="box" id="r-detail"></div></div>
+<div class="box"><h3>Add a demo room</h3><div class="form"><label>Room ID<input id="r-id" maxlength="12"></label><label>Building<input id="r-bld" maxlength="40"></label><label>Type<select id="r-type"></select></label><label>Capacity<input id="r-cap" type="number" min="1"></label><label>Current occupancy<input id="r-occ" type="number" min="0" value="0"></label><label>Equipment<select id="r-equip" multiple size="3"></select></label><button id="r-add" class="pri">Add room</button></div></div></section>
+</main>
+<footer><button id="reset">Reset to original sample data</button><p>Changes are saved in this browser only (localStorage), not shared with other users or devices. This static GitHub Pages site has no login or server-side security.</p></footer>
+<div id="toast" class="toast" hidden role="status"></div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="assets/js/data.js"></script><script src="assets/js/storage.js"></script><script src="assets/js/utils.js"></script><script src="assets/js/prediction.js"></script><script src="assets/js/scheduling.js"></script><script src="assets/js/environment.js"></script><script src="assets/js/app.js"></script>
+</body></html>
